@@ -3261,6 +3261,7 @@ static OPLUS_ATTR(ffc_mode, S_IRUGO|S_IWUSR, oplus_get_ffc_mode_debug,
 static OPLUS_ATTR(adfr_config, S_IRUGO | S_IWUSR, oplus_adfr_get_config_attr, oplus_adfr_set_config_attr);
 static OPLUS_ATTR(mux_vsync_switch, S_IRUGO | S_IWUSR, oplus_adfr_get_mux_vsync_switch_attr, oplus_adfr_set_mux_vsync_switch_attr);
 static OPLUS_ATTR(test_te, S_IRUGO | S_IWUSR, oplus_adfr_get_test_te_attr, oplus_adfr_set_test_te_attr);
+static OPLUS_ATTR(ltpo_enable, S_IRUGO | S_IWUSR, oplus_adfr_get_ltpo_enable_attr, oplus_adfr_set_ltpo_enable_attr);
 #endif /* OPLUS_FEATURE_DISPLAY_ADFR */
 #ifdef OPLUS_FEATURE_DISPLAY_HIGH_PRECISION
 static OPLUS_ATTR(high_precision_rscc_set, S_IRUGO | S_IWUSR, oplus_display_get_high_precision_rscc,
@@ -3331,6 +3332,7 @@ static struct attribute *oplus_display_attrs[] = {
 	&oplus_attr_adfr_config.attr,
 	&oplus_attr_mux_vsync_switch.attr,
 	&oplus_attr_test_te.attr,
+	&oplus_attr_ltpo_enable.attr,
 #endif /* OPLUS_FEATURE_DISPLAY_ADFR */
 #ifdef OPLUS_FEATURE_DISPLAY_HIGH_PRECISION
 	&oplus_attr_high_precision_rscc_set.attr,

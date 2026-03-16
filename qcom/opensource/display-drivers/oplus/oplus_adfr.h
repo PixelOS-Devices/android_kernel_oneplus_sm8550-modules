@@ -148,6 +148,7 @@ struct oplus_adfr_params {
 	bool need_filter_auto_on_cmd;					/* indicates whether auto on cmds need to be filtered if auto off cmds have been sent within one frame or not */
 	unsigned int sa_min_fps;						/* the minimum self-refresh rate when no image would be sent to ddic in sa mode */
 	bool sa_min_fps_updated;						/* indicates whether sa min fps is updated or not */
+	bool sa_fallback_applied;						/* indicates whether kernel fallback has armed sa auto mode after the latest mode reset */
 	bool skip_min_fps_setting;						/* indicates whether min fps setting should be skipped or not */
 	unsigned int sw_fps;							/* software vsync value */
 	unsigned int fakeframe;							/* indicates whether fakeframe is enabled or not */
@@ -328,6 +329,11 @@ int oplus_adfr_get_test_te(void *buf);
 ssize_t oplus_adfr_set_test_te_attr(struct kobject *obj,
 	struct kobj_attribute *attr, const char *buf, size_t count);
 ssize_t oplus_adfr_get_test_te_attr(struct kobject *obj,
+	struct kobj_attribute *attr, char *buf);
+/* ltpo enable */
+ssize_t oplus_adfr_set_ltpo_enable_attr(struct kobject *obj,
+	struct kobj_attribute *attr, const char *buf, size_t count);
+ssize_t oplus_adfr_get_ltpo_enable_attr(struct kobject *obj,
 	struct kobj_attribute *attr, char *buf);
 /* high precision test */
 ssize_t oplus_display_set_high_precision_rscc(struct kobject *obj,

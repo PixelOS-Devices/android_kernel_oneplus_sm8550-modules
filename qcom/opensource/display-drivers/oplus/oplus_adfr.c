@@ -75,6 +75,7 @@ unsigned int oplus_adfr_display_id = OPLUS_ADFR_PRIMARY_DISPLAY;
 EXPORT_SYMBOL(oplus_adfr_display_id);
 /* adfr global structure */
 static struct oplus_adfr_params g_oplus_adfr_params[2] = {0};
+static bool oplus_adfr_ltpo_enabled = false;
 
 /* -------------------- extern -------------------- */
 /* extern params */
@@ -1516,6 +1517,26 @@ static int oplus_adfr_min_fps_check(void *dsi_panel, unsigned int min_fps)
 	return min_fps;
 }
 
+static int oplus_adfr_sa_fallback_min_fps_get(void *dsi_panel)
+{
+	struct dsi_panel *panel = dsi_panel;
+	struct dsi_display_mode_priv_info *priv_info = NULL;
+
+	if (!panel || !panel->cur_mode || !panel->cur_mode->priv_info) {
+		ADFR_ERR("invalid panel params\n");
+		return 0;
+	}
+
+	priv_info = panel->cur_mode->priv_info;
+	if (!priv_info->oplus_adfr_min_fps_mapping_table_count) {
+		ADFR_DEBUG("no sa fallback because min fps mapping table is not set\n");
+		return 0;
+	}
+
+	return priv_info->oplus_adfr_min_fps_mapping_table[
+		priv_info->oplus_adfr_min_fps_mapping_table_count - 1];
+}
+
 static int oplus_adfr_min_fps_update(void *dsi_display, unsigned int min_fps)
 {
 	int rc = 0;
@@ -1686,6 +1707,7 @@ int oplus_adfr_sa_handle(void *sde_encoder_virt)
 {
 	int rc = 0;
 	unsigned int h_skew = STANDARD_ADFR;
+	unsigned int fallback_min_fps = 0;
 	struct sde_encoder_virt *sde_enc = sde_encoder_virt;
 	struct sde_connector *c_conn = NULL;
 	struct dsi_display *display = NULL;
@@ -1760,6 +1782,21 @@ int oplus_adfr_sa_handle(void *sde_encoder_virt)
 	}
 
 	OPLUS_ADFR_TRACE_BEGIN("oplus_adfr_sa_handle");
+
+	if (oplus_adfr_ltpo_enabled && !p_oplus_adfr_params->sa_fallback_applied
+			&& !p_oplus_adfr_params->need_filter_auto_on_cmd) {
+		fallback_min_fps = oplus_adfr_sa_fallback_min_fps_get(display->panel);
+		if (fallback_min_fps
+				&& (fallback_min_fps < display->panel->cur_mode->timing.refresh_rate)) {
+			p_oplus_adfr_params->auto_mode = OPLUS_ADFR_AUTO_ON;
+			p_oplus_adfr_params->auto_mode_updated = true;
+			p_oplus_adfr_params->sa_min_fps = fallback_min_fps;
+			p_oplus_adfr_params->sa_min_fps_updated = true;
+			p_oplus_adfr_params->sa_fallback_applied = true;
+			ADFR_INFO("enable kernel sa fallback, auto_mode:%u, sa_min_fps:%u\n",
+					p_oplus_adfr_params->auto_mode, p_oplus_adfr_params->sa_min_fps);
+		}
+	}
 
 	if (p_oplus_adfr_params->auto_mode_updated) {
 		rc = oplus_adfr_auto_mode_update(display, p_oplus_adfr_params->auto_mode);
@@ -1862,6 +1899,7 @@ int oplus_adfr_status_reset(void *dsi_panel)
 
 	h_skew = panel->cur_mode->timing.h_skew;
 	refresh_rate = panel->cur_mode->timing.refresh_rate;
+	p_oplus_adfr_params->sa_fallback_applied = false;
 
 	if ((h_skew == STANDARD_ADFR) || (h_skew == STANDARD_MFR)) {
 		p_oplus_adfr_params->auto_mode = OPLUS_ADFR_AUTO_OFF;
@@ -5947,6 +5985,40 @@ ssize_t oplus_adfr_get_test_te_attr(struct kobject *obj,
 	ADFR_DEBUG("end\n");
 
 	return sprintf(buf, "%u\n", refresh_rate);
+}
+ssize_t oplus_adfr_set_ltpo_enable_attr(struct kobject *obj,
+	struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	unsigned int ltpo_enabled = 0;
+
+	ADFR_DEBUG("start\n");
+
+	if (!buf) {
+		ADFR_ERR("invalid buf param\n");
+		return count;
+	}
+
+	if (sscanf(buf, "%u", &ltpo_enabled) != 1) {
+		ADFR_ERR("failed to parse ltpo value\n");
+		return count;
+	}
+
+	oplus_adfr_ltpo_enabled = !!ltpo_enabled;
+	ADFR_INFO("ltpo_enable:%u\n", oplus_adfr_ltpo_enabled);
+
+	ADFR_DEBUG("end\n");
+
+	return count;
+}
+ssize_t oplus_adfr_get_ltpo_enable_attr(struct kobject *obj,
+	struct kobj_attribute *attr, char *buf)
+{
+	if (!buf) {
+		ADFR_ERR("invalid buf param\n");
+		return -EINVAL;
+	}
+
+	return sprintf(buf, "%u\n", oplus_adfr_ltpo_enabled ? 1 : 0);
 }
 ssize_t oplus_display_set_high_precision_rscc(struct kobject *obj,
 		struct kobj_attribute *attr,
