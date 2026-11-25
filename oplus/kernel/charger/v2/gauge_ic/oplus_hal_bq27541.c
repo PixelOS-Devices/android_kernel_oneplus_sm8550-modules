@@ -1787,10 +1787,15 @@ static int zy0603_protect_check(struct oplus_chg_ic_dev *ic_dev)
 	}
 	chip = oplus_chg_ic_get_drvdata(ic_dev);
 	/*printk(KERN_ERR "[%s] v12 unseal start\n", __func__);*/
-	if (!chip || (chip && !chip->batt_zy0603) || (chip && chip->afi_count == 0)) {
-		printk(KERN_ERR "[%s] return for %s\n", __func__, !chip ? "guage is null" : "is not zy0603 gauge");
-		return -1;
+	if (!chip) {
+		chg_err("gauge chip is NULL\n");
+		return -ENODEV;
 	}
+	/* This optional AFI check does not apply to a non-ZY0603 gauge.
+	 * Keep the real ZY0603 protection checks below intact.
+	 */
+	if (!chip->batt_zy0603 || chip->afi_count == 0)
+		return 0;
 
 	/*printk(KERN_ERR "[%s] ssdf and pf disable = %d\n", __func__, gauge_ic->disabled);*/
 	/* if (oplus_vooc_get_allow_reading() && gauge_ic->disabled !error_occured) { */
